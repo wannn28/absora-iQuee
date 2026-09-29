@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react'
-import { api, type Absence, type Employee } from '../api'
+import { CalendarRange } from 'lucide-react'
+import { api, formatShort, type Absence, type Employee } from '../api'
+import { Avatar } from '../components/ui'
 
 const empty = { employee_id: '', type: 'Paid Leave', status: 'Pending', start_date: '2025-12-09', end_date: '2025-12-10', note: '' }
+
+function slugFor(type: string) {
+  if (type === 'Sick Leave') return 'sick'
+  if (type === 'Vacation') return 'vacation'
+  return 'paid'
+}
 
 export default function Absences() {
   const [rows, setRows] = useState<Absence[]>([])
@@ -38,12 +46,18 @@ export default function Absences() {
   }
 
   return (
-    <div className="page">
-      <div className="section-head"><h1>Absences</h1></div>
-      <form className="inset" onSubmit={create}>
-        <strong>Request leave</strong>
-        {err && <p className="err">{err}</p>}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr .8fr .8fr .8fr', gap: 8, marginTop: 10 }}>
+    <div className="page studio">
+      <div className="section-head">
+        <h1>Absences</h1>
+        <span className="linkish">{rows.length} requests</span>
+      </div>
+
+      <form className="request-card" onSubmit={create}>
+        <div className="req-head">
+          <strong>Request leave</strong>
+          {err ? <span className="err">{err}</span> : <span className="hint">Add a request without leaving this page</span>}
+        </div>
+        <div className="req-fields">
           <label className="field"><span>Employee</span>
             <select value={form.employee_id} onChange={(e) => setForm({ ...form, employee_id: e.target.value })}>
               {employees.map((emp) => <option key={emp.id} value={emp.id}>{emp.name}</option>)}
@@ -64,24 +78,38 @@ export default function Absences() {
               <option>Approved</option>
             </select>
           </label>
+          <button className="btn dark" type="submit">Save request</button>
         </div>
-        <button className="btn dark" type="submit">Save request</button>
       </form>
-      <div className="list">
-        {rows.map((a) => (
-          <div key={a.id} className="person-row" style={{ gridTemplateColumns: '1.2fr 1fr 1.2fr .8fr auto' }}>
-            <b>{a.employee_name}</b>
-            <span className={`tag ${a.type === 'Sick Leave' ? 'sick' : a.type === 'Vacation' ? 'vacation' : 'paid'}`}>{a.type}</span>
-            <span>{a.start_date} → {a.end_date}</span>
-            <span className={`tag ${a.status === 'Pending' ? 'pending' : 'approved'}`}>{a.status}</span>
-            <span style={{ display: 'flex', gap: 6 }}>
-              {a.status !== 'Approved' && <button className="btn green" onClick={() => setStatus(a, 'Approved')}>Approve</button>}
-              {a.status !== 'Pending' && <button className="btn amber" onClick={() => setStatus(a, 'Pending')}>Mark pending</button>}
-              <button className="btn light" onClick={async () => { await api(`/api/absences/${a.id}`, { method: 'DELETE' }); await load() }}>Delete</button>
-            </span>
-          </div>
-        ))}
-      </div>
+
+      <section className="card abs-board">
+        <div className="card-h">
+          <h2>All requests</h2>
+          <span className="viewall">{rows.filter((r) => r.status === 'Pending').length} pending</span>
+        </div>
+        <div className="abs-grid">
+          {rows.map((a, i) => (
+            <article key={a.id} className={`abs-card ${rows.length % 2 === 1 && i === rows.length - 1 ? 'wide' : ''}`}>
+              <Avatar name={a.employee_name || ''} color={a.color} className="lg" />
+              <div className="who">
+                <div className="nm">{a.employee_name}</div>
+                <div className="rl">{a.role_title || 'Employee'}</div>
+              </div>
+              <span className={`tag ${slugFor(a.type)}`}>{a.type}</span>
+              <div className="abs-meta">
+                <span className="dates"><CalendarRange size={13} /> {formatShort(a.start_date)} – {formatShort(a.end_date)}</span>
+                <span className={`tag ${a.status === 'Pending' ? 'pending' : 'approved'}`}>{a.status}</span>
+              </div>
+              <div className="quiet-actions">
+                {a.status !== 'Approved' && <button className="pill-quiet ok" onClick={() => setStatus(a, 'Approved')}>Approve</button>}
+                {a.status !== 'Pending' && <button className="pill-quiet wait" onClick={() => setStatus(a, 'Pending')}>Mark pending</button>}
+                <button className="pill-quiet" onClick={async () => { await api(`/api/absences/${a.id}`, { method: 'DELETE' }); await load() }}>Delete</button>
+              </div>
+            </article>
+          ))}
+          {rows.length === 0 && <p className="pend-empty">No leave requests yet.</p>}
+        </div>
+      </section>
     </div>
   )
 }
