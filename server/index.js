@@ -418,6 +418,7 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: 'Something went wrong.' })
 })
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Absora listening on ${PORT}`)
+const HOST = process.env.HOST || '127.0.0.1'
+app.listen(PORT, HOST, () => {
+  console.log(`Absora listening on ${HOST}:${PORT}`)
 })
