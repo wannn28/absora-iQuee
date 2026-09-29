@@ -7,7 +7,7 @@ type SpeechRec = {
   onend: () => void
 }
 import { Link, useOutletContext } from 'react-router-dom'
-import { Calendar, Mic, Paperclip, SlidersHorizontal } from 'lucide-react'
+import { Briefcase, Calendar, Mic, Paperclip, SlidersHorizontal, Thermometer, TreePalm } from 'lucide-react'
 import {
   api,
   firstName,
@@ -31,8 +31,6 @@ type Dash = {
   onboarding: OnboardPerson[]
 }
 
-const COL = 74
-
 export default function Dashboard() {
   const { user } = useAuth()
   const { search } = useOutletContext<{ search: string }>()
@@ -47,7 +45,7 @@ export default function Dashboard() {
   const [listening, setListening] = useState(false)
 
   const bounds = monthBounds(anchor)
-  const days = useMemo(() => monthDays(anchor), [anchor])
+  const days = useMemo(() => monthDays(anchor).slice(0, 16), [anchor])
 
   useEffect(() => {
     api<Dash>(`/api/dashboard?from=${bounds.from}&to=${bounds.to}`).then(setData).catch(() => {})
@@ -56,7 +54,8 @@ export default function Dashboard() {
   const today = data?.today || '2025-12-09'
   const todayIndex = days.findIndex((d) => d.iso === today)
   const q = search.trim().toLowerCase()
-  const employees = (data?.employees || []).filter((e) => !q || `${e.name} ${e.role_title}`.toLowerCase().includes(q))
+  const matched = (data?.employees || []).filter((e) => !q || `${e.name} ${e.role_title}`.toLowerCase().includes(q))
+  const employees = q ? matched : matched.slice(0, 5)
 
   function pillsFor(empId: number) {
     return (data?.absences || []).filter((a) => {
@@ -77,7 +76,13 @@ export default function Dashboard() {
       }
     })
     if (s < 0 || e < 0) return null
-    return { left: s * COL + 4, width: (e - s + 1) * COL - 8 }
+    const n = Math.max(days.length, 1)
+    const span = e - s + 1
+    const pad = 4
+    return {
+      left: `calc(var(--name) + (100% - var(--name)) * ${s} / ${n} + ${pad}px)`,
+      width: `calc((100% - var(--name)) * ${span} / ${n} - ${pad * 2}px)`,
+    }
   }
 
   async function ask(message: string) {
@@ -120,7 +125,7 @@ export default function Dashboard() {
   const faces = (data?.employees || []).slice(0, 3)
 
   return (
-    <div className="page">
+    <div className="page dash">
       <div className="section-head">
         <h1>Planned Absences</h1>
         <div className="head-actions">
@@ -168,7 +173,7 @@ export default function Dashboard() {
           {employees.map((emp) => (
             <div className="cal-row" key={emp.id}>
               <div className="emp">
-                <Avatar name={emp.name} color={emp.color} className="lg" />
+                <Avatar name={emp.name} color={emp.color} />
                 <div>
                   <div className="nm">{emp.name}</div>
                   <div className="rl">{emp.role_title}</div>
@@ -180,16 +185,19 @@ export default function Dashboard() {
                 if (!box) return null
                 const slug = a.type === 'Sick Leave' ? 'sick' : a.type === 'Vacation' ? 'vacation' : 'paid'
                 return (
-                  <div key={a.id} className={`absence ${slug}`} style={{ left: `calc(var(--name) + ${box.left}px)`, width: box.width }} title={`${a.type} · ${a.status}`}>
-                    <span className="t">{a.type}</span>
-                    <span className="s">{a.status}</span>
+                  <div key={a.id} className={`absence ${slug}`} style={{ left: box.left, width: box.width }} title={`${a.type} · ${a.status}`}>
+                    <span className="ic">{a.type === 'Sick Leave' ? <Thermometer size={13} /> : a.type === 'Vacation' ? <TreePalm size={13} /> : <Briefcase size={13} />}</span>
+                    <span className="abody">
+                      <span className="t">{a.type}</span>
+                      <span className="chip">{a.status}</span>
+                    </span>
                   </div>
                 )
               })}
             </div>
           ))}
           {todayIndex >= 0 && (
-            <div className="today-line" style={{ left: `calc(var(--name) + ${todayIndex} * var(--col) + var(--col) / 2)` }} />
+            <div className="today-line" style={{ left: `calc(var(--name) + (100% - var(--name)) * ${todayIndex} / ${Math.max(days.length, 1)} + (100% - var(--name)) / ${Math.max(days.length, 1)} / 2)` }} />
           )}
         </div>
       </div>
@@ -216,6 +224,7 @@ export default function Dashboard() {
               </div>
             </div>
           )}
+          <div className="event-list">
           {rest.map((ev) => (
             <div className="event-row" key={ev.id}>
               <span className="dot" />
@@ -226,6 +235,7 @@ export default function Dashboard() {
               <div className="sub">{formatShort(ev.event_date)}</div>
             </div>
           ))}
+          </div>
         </section>
 
         <section className="card">
