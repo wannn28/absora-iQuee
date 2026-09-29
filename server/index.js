@@ -399,7 +399,7 @@ app.post('/api/assistant', requireAuth, (req, res) => {
   } else if (/help|what can you|anything/.test(q)) {
     reply = 'I can answer from Absora data: who is on leave today, pending approvals, headcount, events, onboarding progress, and this month’s absence report.'
   } else {
-    reply = `I don’t have an answer for that in Absora’s data. Try “who is on leave today”, “pending approvals”, “headcount”, or “upcoming events”. Today in this workspace is ${today}.`
+    reply = 'Try who is on leave today, pending approvals, headcount, or upcoming events.'
   }
   res.json({ reply })
 })

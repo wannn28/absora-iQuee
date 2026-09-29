@@ -1,10 +1,44 @@
 import { useEffect, type ReactNode } from 'react'
-import { initials } from '../api'
 
-export function Avatar({ name, color, className = '' }: { name: string; color: string; className?: string }) {
+const NAMED: Record<string, string> = {
+  'ethan parker': 'ethan',
+  'liam carter': 'liam',
+  'noah mitchell': 'noah',
+  'ava thompson': 'ava',
+  'mia robinson': 'mia',
+  'olivia bennett': 'olivia',
+  'james cooper': 'james',
+  'harper diaz': 'harper',
+  'benjamin brooks': 'benjamin',
+  'charlotte lee': 'charlotte',
+  'henry ward': 'henry',
+  'amelia foster': 'amelia',
+  'sophia adams': 'sophia',
+  'lucas morgan': 'lucas',
+  'mason reed': 'mason',
+  'justin crown': 'justin',
+  'emily': 'emily',
+  'muhammad': 'muhammad',
+  'you': 'you',
+}
+
+const POOL = ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'g7', 'ethan', 'ava', 'noah', 'sophia']
+
+function faceFor(name: string) {
+  const key = name.trim().toLowerCase()
+  if (NAMED[key]) return NAMED[key]
+  const first = key.split(/\s+/)[0]
+  if (first && NAMED[first]) return NAMED[first]
+  let h = 0
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0
+  return POOL[h % POOL.length]
+}
+
+export function Avatar({ name, color, className = '' }: { name: string; color?: string; className?: string }) {
+  const id = faceFor(name || 'you')
   return (
-    <span className={`av ${className}`} style={{ background: color }} aria-hidden>
-      {initials(name)}
+    <span className={`av ${className}`} style={{ background: color || '#efeae6' }} title={name}>
+      <img src={`/avatars/${id}.svg`} alt="" />
     </span>
   )
 }

@@ -86,7 +86,40 @@ export function openDb() {
     );
   `)
   seed(db)
+  retuneDemo(db)
   return db
+}
+
+function retuneDemo(db) {
+  const byName = (name) => db.prepare('SELECT id FROM employees WHERE name = ?').get(name)
+  const upd = db.prepare(
+    'UPDATE absences SET type=?, status=?, start_date=?, end_date=? WHERE employee_id=? AND start_date=? AND end_date=? AND type=?'
+  )
+  const jobs = [
+    ['Ethan Parker', 'Paid Leave', '2025-12-03', '2025-12-05', 'Vacation', 'Approved', '2025-12-15', '2025-12-19'],
+    ['Liam Carter', 'Sick Leave', '2025-12-08', '2025-12-10', 'Paid Leave', 'Approved', '2025-12-03', '2025-12-05'],
+    ['Noah Mitchell', 'Vacation', '2025-12-10', '2025-12-14', 'Sick Leave', 'Pending', '2025-12-08', '2025-12-10'],
+    ['Ava Thompson', 'Paid Leave', '2025-12-01', '2025-12-02', 'Vacation', 'Approved', '2025-12-02', '2025-12-04'],
+    ['Mia Robinson', 'Sick Leave', '2025-12-12', '2025-12-13', 'Paid Leave', 'Approved', '2025-12-14', '2025-12-17'],
+  ]
+  for (const [name, oldType, oldS, oldE, type, status, s, e] of jobs) {
+    const row = byName(name)
+    if (!row) continue
+    upd.run(type, status, s, e, row.id, oldS, oldE, oldType)
+  }
+  db.prepare('UPDATE events SET subtitle=? WHERE title=? AND subtitle=?').run(
+    'A practical session focused on modern development workflows',
+    'Software Dev Meetup',
+    'Building resilient APIs',
+  )
+  db.prepare('UPDATE events SET event_date=?, start_time=?, end_time=? WHERE title=? AND event_date=?').run(
+    '2025-12-05', '14:00', '15:00', 'Software Dev Meetup', '2025-12-08',
+  )
+  db.prepare('UPDATE events SET subtitle=? WHERE title=? AND subtitle=?').run(
+    'Dive into essential security strategies, threat modeling, and how teams respond.',
+    'Cybersecurity Workshop',
+    'Threat modeling basics',
+  )
 }
 
 function seed(db) {
@@ -119,11 +152,11 @@ function seed(db) {
     const abs = db.prepare(
       `INSERT INTO absences (employee_id, type, status, start_date, end_date, note) VALUES (?, ?, ?, ?, ?, ?)`
     )
-    abs.run(ids['Ethan Parker'], 'Paid Leave', 'Approved', '2025-12-03', '2025-12-05', '')
-    abs.run(ids['Liam Carter'], 'Sick Leave', 'Pending', '2025-12-08', '2025-12-10', '')
-    abs.run(ids['Noah Mitchell'], 'Vacation', 'Approved', '2025-12-10', '2025-12-14', '')
-    abs.run(ids['Ava Thompson'], 'Paid Leave', 'Approved', '2025-12-01', '2025-12-02', '')
-    abs.run(ids['Mia Robinson'], 'Sick Leave', 'Pending', '2025-12-12', '2025-12-13', '')
+    abs.run(ids['Ethan Parker'], 'Vacation', 'Approved', '2025-12-15', '2025-12-19', '')
+    abs.run(ids['Liam Carter'], 'Paid Leave', 'Approved', '2025-12-03', '2025-12-05', '')
+    abs.run(ids['Noah Mitchell'], 'Sick Leave', 'Pending', '2025-12-08', '2025-12-10', '')
+    abs.run(ids['Ava Thompson'], 'Vacation', 'Approved', '2025-12-02', '2025-12-04', '')
+    abs.run(ids['Mia Robinson'], 'Paid Leave', 'Approved', '2025-12-14', '2025-12-17', '')
     abs.run(ids['Olivia Bennett'], 'Vacation', 'Approved', '2025-12-04', '2025-12-05', '')
     abs.run(ids['Harper Diaz'], 'Paid Leave', 'Approved', '2025-12-18', '2025-12-19', '')
 
@@ -131,8 +164,8 @@ function seed(db) {
       `INSERT INTO events (title, subtitle, event_date, start_time, end_time, badge, highlighted) VALUES (?, ?, ?, ?, ?, ?, ?)`
     )
     ev.run('Tech Innovations Summit', 'Cutting-edge AI trends', '2025-12-05', '14:00', '15:00', 'In 15 min', 1)
-    ev.run('Software Dev Meetup', 'Building resilient APIs', '2025-12-08', '16:00', '17:30', '', 0)
-    ev.run('Cybersecurity Workshop', 'Threat modeling basics', '2025-12-12', '10:00', '12:00', '', 0)
+    ev.run('Software Dev Meetup', 'A practical session focused on modern development workflows', '2025-12-05', '14:00', '15:00', '', 0)
+    ev.run('Cybersecurity Workshop', 'Dive into essential security strategies, threat modeling, and how teams respond.', '2025-12-12', '10:00', '12:00', '', 0)
 
     const person = db.prepare(`INSERT INTO onboarding_people (name, role_title, color) VALUES (?, ?, ?)`)
     const task = db.prepare(
